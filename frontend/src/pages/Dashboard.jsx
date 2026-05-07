@@ -41,6 +41,23 @@ const Dashboard = () => {
     setShowCalculator(false);
   };
 
+  const handleStatusChange = async (billId, newStatus) => {
+    try {
+      await axios.put(`http://localhost:5000/api/bills/${billId}`, {
+        payment_status: newStatus
+      });
+      
+      // Refresh both bills and stats after status change
+      await fetchBills();
+      await fetchStats();
+      
+      alert('Payment status updated successfully!');
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    }
+  };
+
   const handleDownload = (bill) => {
     const companyInfo = {
       companyName: user?.businessName || 'My Furniture Business',
@@ -187,12 +204,26 @@ const Dashboard = () => {
                           <td>{bill.customer_name}</td>
                           <td className="text-green">₹{parseFloat(bill.total_amount).toLocaleString('en-IN')}</td>
                           <td>
-                            <span className={`badge ${
-                              bill.payment_status === 'paid' ? 'badge-success' :
-                              bill.payment_status === 'partial' ? 'badge-warning' : 'badge-danger'
-                            }`}>
-                              {bill.payment_status}
-                            </span>
+                            <select
+                              value={bill.payment_status}
+                              onChange={(e) => handleStatusChange(bill.id, e.target.value)}
+                              className={`badge ${
+                                bill.payment_status === 'paid' ? 'badge-success' :
+                                bill.payment_status === 'partial' ? 'badge-warning' : 'badge-danger'
+                              }`}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="partial">Partial</option>
+                              <option value="paid">Paid</option>
+                            </select>
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <button 

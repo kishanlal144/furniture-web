@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
-import { Download, Plus, Eye, Filter } from 'lucide-react';
+import { Download, Plus, Eye, Filter, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import MeasurementCalculator from '../components/MeasurementCalculator';
 import { generatePDF } from '../utils/pdfExport';
@@ -48,6 +48,24 @@ const Bills = () => {
       panNumber: user?.panNumber || ''
     };
     generatePDF(bill, companyInfo);
+  };
+
+  const handleStatusChange = async (billId, newStatus) => {
+    try {
+      await axios.put(`http://localhost:5000/api/bills/${billId}`, {
+        payment_status: newStatus
+      });
+      
+      // Update local state
+      setBills(bills.map(bill =>
+        bill.id === billId ? { ...bill, payment_status: newStatus } : bill
+      ));
+      
+      alert('Payment status updated successfully!');
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -146,18 +164,32 @@ const Bills = () => {
                           <td className="text-green">₹{parseFloat(bill.total_amount).toLocaleString()}</td>
                           <td>₹{parseFloat(bill.paid_amount || 0).toLocaleString()}</td>
                           <td>
-                            <span className={getStatusBadge(bill.payment_status)}>
-                              {bill.payment_status}
-                            </span>
+                            <select
+                              value={bill.payment_status}
+                              onChange={(e) => handleStatusChange(bill.id, e.target.value)}
+                              className={getStatusBadge(bill.payment_status)}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="partial">Partial</option>
+                              <option value="paid">Paid</option>
+                            </select>
                           </td>
                           <td>{bill.items?.length || 0} items</td>
                           <td style={{ textAlign: 'center' }}>
-                            <button 
+                            <button
                               onClick={() => handleDownload(bill)}
-                              style={{ 
-                                background: 'none', 
-                                border: 'none', 
-                                color: 'var(--primary)', 
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--primary)',
                                 cursor: 'pointer',
                                 padding: '0.5rem'
                               }}

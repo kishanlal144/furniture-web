@@ -263,6 +263,19 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(404).json({ msg: 'Bill not found' });
     }
 
+    const currentBill = bills[0];
+    
+    // Auto-calculate paid_amount based on payment_status if not explicitly provided
+    let finalPaidAmount = paid_amount;
+    if (payment_status && !paid_amount) {
+      if (payment_status === 'paid') {
+        finalPaidAmount = currentBill.total_amount;
+      } else if (payment_status === 'pending') {
+        finalPaidAmount = 0;
+      }
+      // For 'partial', keep existing paid_amount or use provided value
+    }
+
     await pool.query(
       `UPDATE bills SET
         payment_status = COALESCE(?, payment_status),
@@ -271,7 +284,7 @@ router.put('/:id', auth, async (req, res) => {
         notes = COALESCE(?, notes),
         due_date = COALESCE(?, due_date)
       WHERE id = ?`,
-      [payment_status, payment_method, paid_amount, notes, due_date, req.params.id]
+      [payment_status, payment_method, finalPaidAmount, notes, due_date, req.params.id]
     );
 
     const [updatedBills] = await pool.query('SELECT * FROM bills WHERE id = ?', [req.params.id]);
